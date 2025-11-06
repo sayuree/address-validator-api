@@ -35,17 +35,18 @@ Backend API that validates and standardizes free-form property addresses using G
 
 ### Setup and Run
 
-1) Prerequisites
+1. Prerequisites
+
 - Node.js 18+
 - A Google Maps API key with Geocoding enabled
 
-2) Install dependencies
+2. Install dependencies
 
 ```bash
 npm install
 ```
 
-3) Configure environment
+3. Configure environment
 
 Create a `.env` file at the root:
 
@@ -57,11 +58,10 @@ PORT=3000
 LOG_LEVEL=info
 ```
 
-4) Start the server
+4. Start the server
 
 ```bash
 npm run build && npm start
-# or for development with ts-node/tsx if configured:
 npm run dev
 ```
 
@@ -77,6 +77,7 @@ npm run dev
 ```
 
 - Minimal input validation:
+
   - `address` must be a string
   - normalized by trimming and collapsing whitespace
   - max length 512 chars
@@ -142,10 +143,12 @@ Example 400:
 This API classifies results as VALIDATED, CORRECTED, or UNVERIFIABLE based on Google Maps Geocoding response semantics, specifically `location_type` and flags:
 
 - VALIDATED
+
   - Uses results with `partial_match = false` and `location_type = ROOFTOP` (precise street-address accuracy).
   - Extracts `street_number`, `street_name`, `city`, `state`, `zipCode` from `address_components`.
 
 - CORRECTED
+
   - Uses results that are less precise but still meaningful: any with `partial_match = true` or `location_type` in { `RANGE_INTERPOLATED`, `GEOMETRIC_CENTER`, `APPROXIMATE` }.
   - Returns `possibleMatches` for client-side disambiguation instead of asserting a single authoritative address.
 
@@ -154,12 +157,14 @@ This API classifies results as VALIDATED, CORRECTED, or UNVERIFIABLE based on Go
   - Country-only fallback handling: Google bias via `components=country:US` can return a generic US result for junk input. We filter out such cases by treating a result as country-only fallback when it is a `partial_match` and either typed as `country` or lacks all detail fields (`street_number`, `street_name`, `city`, `zipCode`). These are marked UNVERIFIABLE.
 
 Google `location_type` reference used in the logic:
+
 - ROOFTOP: precise geocode with street address precision.
 - RANGE_INTERPOLATED: approximate point along a road where rooftops are unavailable.
 - GEOMETRIC_CENTER: geometric center of a street/polyline or region/polygon.
 - APPROXIMATE: general approximation.
 
 ### Tools Used (including AI)
+
 - ChatGPT assistance was used to generate initial scaffolding for repetitive setup tasks such as:
   - Creating an Express app with TypeScript support
   - Setting up tsconfig.json and ESLint
@@ -169,6 +174,7 @@ Google `location_type` reference used in the logic:
 AI also assisted with proofreading and structuring this README for clarity and brevity. All architecture and design descriptions reflect my own understanding and decisions.
 
 Additionally, AI was used to brainstorm test scenarios covering:
+
 - Validated, corrected, and unverifiable address outcomes
 - Upstream API error handling (e.g., OVER_QUERY_LIMIT, INVALID_REQUEST)
 
@@ -179,4 +185,3 @@ curl -s -X POST http://localhost:3000/validate-address \
   -H 'Content-Type: application/json' \
   -d '{"address": "1600 Amphitheatre Parkway, Mountain View, CA"}' | jq .
 ```
-

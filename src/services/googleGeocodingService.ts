@@ -1,7 +1,10 @@
 import axios from "axios";
 import { HttpError } from "../middleware/errorHandler.js";
 import { logger } from "../utils/logger.js";
-import { AddressComponents, AddressValidationResult } from "../types/Address.js";
+import {
+  AddressComponents,
+  AddressValidationResult,
+} from "../types/Address.js";
 import { config } from "../config/env.js";
 
 /**
@@ -41,14 +44,38 @@ export async function validateUSAddress(
 
 function mapGoogleStatus(status: string): AddressValidationResult | null {
   if (status === "OK") return null;
-  if (status === "ZERO_RESULTS") return { status: "UNVERIFIABLE", message: "No address found." };
+  if (status === "ZERO_RESULTS")
+    return { status: "UNVERIFIABLE", message: "No address found." };
 
-  const statusToError: Record<string, { code: number; msg: string; log: string }> = {
-    OVER_QUERY_LIMIT: { code: 429, msg: "Geocoding quota exceeded", log: "geocoding.over_query_limit" },
-    OVER_DAILY_LIMIT: { code: 403, msg: "Geocoding request denied: invalid/missing key, billing, or usage cap", log: "geocoding.over_daily_limit" },
-    REQUEST_DENIED: { code: 403, msg: "Geocoding request denied", log: "geocoding.request_denied" },
-    INVALID_REQUEST: { code: 400, msg: "Invalid geocoding request: missing or malformed query", log: "geocoding.invalid_request" },
-    UNKNOWN_ERROR: { code: 503, msg: "Geocoding service error, try again later", log: "geocoding.unknown_error" },
+  const statusToError: Record<
+    string,
+    { code: number; msg: string; log: string }
+  > = {
+    OVER_QUERY_LIMIT: {
+      code: 429,
+      msg: "Geocoding quota exceeded",
+      log: "geocoding.over_query_limit",
+    },
+    OVER_DAILY_LIMIT: {
+      code: 403,
+      msg: "Geocoding request denied: invalid/missing key, billing, or usage cap",
+      log: "geocoding.over_daily_limit",
+    },
+    REQUEST_DENIED: {
+      code: 403,
+      msg: "Geocoding request denied",
+      log: "geocoding.request_denied",
+    },
+    INVALID_REQUEST: {
+      code: 400,
+      msg: "Invalid geocoding request: missing or malformed query",
+      log: "geocoding.invalid_request",
+    },
+    UNKNOWN_ERROR: {
+      code: 503,
+      msg: "Geocoding service error, try again later",
+      log: "geocoding.unknown_error",
+    },
   };
 
   const mapping = statusToError[status];
@@ -61,7 +88,10 @@ function mapGoogleStatus(status: string): AddressValidationResult | null {
   throw new HttpError(502, `Unexpected geocoding status: ${status}`);
 }
 
-function classifyGeocodeResults(results: any[], originalInput: string): AddressValidationResult {
+function classifyGeocodeResults(
+  results: any[],
+  originalInput: string
+): AddressValidationResult {
   if (!results || results.length === 0) {
     return { status: "UNVERIFIABLE", message: "No address found." };
   }
@@ -75,7 +105,6 @@ function classifyGeocodeResults(results: any[], originalInput: string): AddressV
   const exactMatches = nonCountryResults.filter(
     (r: any) => !r.partial_match && r.geometry?.location_type === "ROOFTOP"
   );
-  console.log("exactMatches:", JSON.stringify(results, null, 2));
   if (exactMatches.length > 0) {
     const best = exactMatches[0];
     const components = extractAddressComponents(best.address_components);
@@ -125,7 +154,8 @@ function rethrowAxiosAsHttpError(err: any): never {
     logger.error("geocoding.http_error", { status });
     if (status === 403) throw new HttpError(403, "Geocoding access forbidden");
     if (status === 429) throw new HttpError(429, "Geocoding rate limited");
-    if (status && status >= 500) throw new HttpError(503, "Geocoding upstream error");
+    if (status && status >= 500)
+      throw new HttpError(503, "Geocoding upstream error");
     throw new HttpError(502, "Geocoding upstream unavailable");
   }
   logger.error("geocoding.unexpected_error", { message: err?.message });
@@ -151,7 +181,7 @@ function compareAddresses(input: string, result: string): MatchStatus {
       .replace(/\b(street)\b/g, "st")
       .replace(/\b(avenue)\b/g, "ave")
       .replace(/\b(mountain)\b/g, "mtn")
-      .replace(/\s+/g, " ") 
+      .replace(/\s+/g, " ")
       .trim();
 
   const normInput = normalize(input);
@@ -167,7 +197,6 @@ function compareAddresses(input: string, result: string): MatchStatus {
   const common = [...inputWords].filter((w) => resultWords.has(w)).length;
   const total = Math.max(inputWords.size, resultWords.size);
   const similarity = common / total;
-  console.log("similarity:", similarity);
   // If mostly overlapping (like typos or abbreviations) → validated
   if (similarity > 0.6) {
     return "validated";
@@ -181,7 +210,8 @@ function isCountryOnlyResult(result: any): boolean {
     return false;
   }
   // Must be typed as country or have only country-level components
-  const hasCountryType = Array.isArray(result.types) && result.types.includes("country");
+  const hasCountryType =
+    Array.isArray(result.types) && result.types.includes("country");
   const components = extractAddressComponents(result.address_components || []);
   const lacksDetail =
     !components.street_number &&

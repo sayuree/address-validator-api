@@ -25,5 +25,3 @@ export async function validateAddressController(req: Request, res: Response) {
     },
   });
 }
-
-

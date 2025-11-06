@@ -119,7 +119,6 @@ function classifyGeocodeResults(
       };
     }
 
-    // CORRECTED: Google fixed something significant (typos, abbreviations, etc.)
     return {
       status: "CORRECTED",
       possibleMatches: [best.formatted_address],
@@ -177,7 +176,7 @@ function compareAddresses(input: string, result: string): MatchStatus {
     s
       .toLowerCase()
       .replace(/[\.,]/g, "")
-      .replace(/\b(road)\b/g, "rd") // normalize common suffixes
+      .replace(/\b(road)\b/g, "rd")
       .replace(/\b(street)\b/g, "st")
       .replace(/\b(avenue)\b/g, "ave")
       .replace(/\b(mountain)\b/g, "mtn")
@@ -191,13 +190,12 @@ function compareAddresses(input: string, result: string): MatchStatus {
     return "validated";
   }
 
-  // Split into words and compute overlap ratio
   const inputWords = new Set(normInput.split(" "));
   const resultWords = new Set(normResult.split(" "));
   const common = [...inputWords].filter((w) => resultWords.has(w)).length;
   const total = Math.max(inputWords.size, resultWords.size);
   const similarity = common / total;
-  // If mostly overlapping (like typos or abbreviations) → validated
+  // If mostly overlapping (like typos or abbreviations) then validated
   if (similarity > 0.6) {
     return "validated";
   }
